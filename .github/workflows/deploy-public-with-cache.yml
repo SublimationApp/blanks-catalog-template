@@ -19,7 +19,6 @@ env:
   CACHE_KEY: zips-prod-2
   
 jobs:
-
   check-repo-privacy:
     runs-on: ubuntu-latest
     
@@ -185,6 +184,11 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Delete build artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: github-pages
 
   reset:
     needs: [check-repo-privacy, has-zips, build, deploy]

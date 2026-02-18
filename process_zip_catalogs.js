@@ -248,7 +248,7 @@ async function main() {
 
     const mainConfig = path.resolve('dist',  "config.json");
 
-    const mainConfigRaw = await fs.readFile(cfgPath, "utf8");
+    const mainConfigRaw = await fs.readFile(mainConfig, "utf8");
     const mainConifgparsed = JSON.parse(mainConfigRaw);
 
     const baseName = mainConifgparsed.baseName
