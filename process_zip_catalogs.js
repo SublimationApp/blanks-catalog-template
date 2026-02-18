@@ -12,15 +12,14 @@ const BASE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 
 
-function runPrerender(parentDir, catalogId, baseName) {
+function runPrerender(parentDir, catalogId) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       process.execPath, // safer than "node"
       [
         path.resolve('ci/prerender.js'),
         parentDir,
-        catalogId,
-        baseName
+        catalogId
       ],
       {
         stdio: 'inherit', // stream logs directly
@@ -246,16 +245,11 @@ async function main() {
     console.log('Moved', src, '->', dest);
 
 
-    const mainConfig = path.resolve('dist',  "config.json");
 
-    const mainConfigRaw = await fs.readFile(mainConfig, "utf8");
-    const mainConifgparsed = JSON.parse(mainConfigRaw);
-
-    const baseName = mainConifgparsed.baseName
 
 
     for (const catalogId of catalogIds) {
-        await runPrerender(CATALOGDIR, catalogId, baseName);
+        await runPrerender(CATALOGDIR, catalogId);
     }
 
 
