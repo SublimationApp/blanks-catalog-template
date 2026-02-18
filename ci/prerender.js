@@ -13,7 +13,7 @@ const PORT = 3000;
 const BASE_URL = `http://localhost:${PORT}`;
 
 
-const [, , catalogsDir, catalogId] = process.argv;
+const [, , catalogsDir, catalogId, baseName] = process.argv;
 
 if (!catalogsDir || !catalogId) {
   console.error('Usage: node prerender.js <catalogsDir> <catalogId>');
@@ -38,7 +38,9 @@ try {
   productIds = [];
 }
 
-const routes = productIds.map(id => `/catalogs/${catalogId}/templates/${id}`);
+
+const _baseName = baseName ?? ""
+const routes = productIds.map(id => `${_baseName}/catalogs/${catalogId}/templates/${id}`);
 // routes.push(`/catalogs/${catalogId}`)
 
 // const crop_widgets = ["square","rect","circle","ellipse","round-corners-2","cone","path"]
