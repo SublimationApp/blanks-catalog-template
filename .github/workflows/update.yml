@@ -96,7 +96,7 @@ jobs:
 
 
 
-      # - name: Commit and push forced update
+      # - name: Commit, Push, Reset history
       #   run: |
       #     git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
       #     git config user.name "github-actions[bot]"
