@@ -1,19 +1,23 @@
-name: Unzip catalogs - public
+name: (public) Unzip catalogs with cache
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write 
 
 concurrency:
   group: "pages-public"
   cancel-in-progress: true
 
+env:
+  CACHE_KEY: zips-prod
+  
 jobs:
 
   check-repo-privacy:
@@ -59,7 +63,7 @@ jobs:
       }}
     outputs:
       # This output will be 'true' or 'false'
-      zip_found: ${{ steps.zipcheck.outputs.found }}
+      zip_found: ${{ steps.final-check.outputs.found }}
 
 
     steps:
@@ -77,7 +81,56 @@ jobs:
             echo "found=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Restore existing cache
+        if: steps.zipcheck.outputs.found == 'false'
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/zips-cache
+          key: ${{ env.CACHE_KEY }}
 
+
+      - name: Move cached zips to root (if restored)
+        if: |
+          ${{
+            (steps.cache-restore.outputs.cache-hit == 'true') && (steps.zipcheck.outputs.found == 'false')
+          }}
+        run: |
+          shopt -s nullglob
+          mv /tmp/zips-cache/*.zip . || true
+
+
+
+      - name: Final found determination
+        id: final-check
+        run: |
+          # true if original zips OR cache hit
+          if [ "${{ steps.zipcheck.outputs.found }}" == "true" ] || [ "${{ steps.cache-restore.outputs.cache-hit }}" == "true" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          
+      - name: Delete previous cache
+        if: steps.zipcheck.outputs.found == 'true'
+        run: |
+          gh extension install actions/gh-actions-cache
+          gh actions-cache delete "${{ env.CACHE_KEY }}" --confirm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update files in /tmp/zips-cache
+        if: steps.zipcheck.outputs.found == 'true'
+        run: |
+          cp -rv *.zip /tmp/zips-cache
+
+      - name: Save new cache
+        if: steps.zipcheck.outputs.found == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/zips-cache
+          key: ${{ env.CACHE_KEY }}
 
   build:
     runs-on: ubuntu-latest
