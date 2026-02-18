@@ -1,0 +1,66 @@
+name: Force update from template
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  TEMPLATE_REPO: "https://github.com/SublimationApp/blanks-catalog-template"
+  TEMPLATE_REF: "main"
+
+
+jobs:
+  update-from-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Save current dist/config.json
+        id: save_config
+        run: |
+          mkdir -p /tmp/keep
+          if [ -f dist/config.json ]; then
+            cp dist/config.json /tmp/keep/config.json
+            cp *.zip /tmp/keep || true
+            echo "saved=true" >> $GITHUB_OUTPUT
+          else
+            echo "saved=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch upstream template
+        run: |
+          # Replace with your template repo URL and branch
+          git clone --depth 1 --branch "$TEMPLATE_REF" "$TEMPLATE_REPO" /tmp/template
+
+      - name: Replace repository contents with template
+        run: |
+          # Clean working tree (remove all tracked files)
+          git rm -r --cached . || true
+          # Remove all files except .git to fully replace
+          find . -maxdepth 1 ! -name . -a ! -name .git -exec rm -rf {} +
+          # Copy template contents into repo root
+          cp -a /tmp/template/. .
+          # Ensure .github and workflow files are present (they will be copied if in template)
+          # Restore preserved file if it existed
+          if [ "${{ steps.save_config.outputs.saved }}" = "true" ]; then
+            mkdir -p dist
+            cp /tmp/keep/config.json dist/config.json
+            cp -a /tmp/keep/*.zip . || true
+          fi
+
+      - name: Commit and push forced update
+        env:
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+        run: |
+          git add -A
+          # Use a clear commit message
+          git commit -m "Force update from template" || echo "No changes to commit"
+          # Push to the same branch that triggered the workflow
+          git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+
