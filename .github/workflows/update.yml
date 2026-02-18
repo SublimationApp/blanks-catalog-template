@@ -103,7 +103,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan new-branch
           git add -A
-          git commit -m "Initial commit"
+          git commit -m "Template updated"
           git branch -D main
           git branch -m main
           git push -f origin main
+
+
+      # some action update
