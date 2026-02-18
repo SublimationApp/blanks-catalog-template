@@ -34,6 +34,11 @@ jobs:
           if [ -f dist/config.json ]; then
             cp dist/config.json /tmp/keep/config.json
             cp *.zip /tmp/keep || true
+           
+            # ! [remote rejected] main -> main (refusing to allow a GitHub App to create or update workflow 
+            # `.github/workflows/update.yml` without `workflows` permission)
+            cp -r .github/ /tmp/keep 
+
             echo "saved=true" >> $GITHUB_OUTPUT
           else
             echo "saved=false" >> $GITHUB_OUTPUT
@@ -64,7 +69,9 @@ jobs:
         run: |
           git clone --depth 1 --branch "$TEMPLATE_REF" "$TEMPLATE_REPO" /tmp/template
           rm -rf /tmp/template/.git 
+          rm -rf /tmp/template/.github # permisions needed
           rm   /tmp/template/*.zip || true
+
 
       - name: Replace repository contents with template
         run: |
@@ -75,6 +82,7 @@ jobs:
           # Copy template contents into repo root
           
           cp -a /tmp/template/. .
+          cp -a /tmp/keep/.github .
           cp -f /tmp/keep/config.json dist/config.json
           cp -a /tmp/keep/*.zip . || true
 
