@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_KEY: zips-prod
+  CACHE_KEY: zips-prod-2
   
 jobs:
 
@@ -69,6 +69,11 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Download real LFS files (replace pointers)
+        run: git lfs pull --include="*.zip"  # ← THIS IS THE KEY STEP
 
       - name: Check for zip files
         id: zipcheck
@@ -88,6 +93,18 @@ jobs:
         with:
           path: /tmp/zips-cache
           key: ${{ env.CACHE_KEY }}
+      
+      # Cache LFS actual data (not pointers)
+      # - name: Cache LFS objects
+      #   if: steps.zipcheck.outputs.found == 'false'
+      #   id: lfs-cache
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     path: .git/lfs
+      #     key: ${{ env.CACHE_KEY }}-lfs-${{ hashFiles('.gitattributes') }}
+      #     restore-keys: |
+      #       ${{ env.CACHE_KEY }}-lfs-
+
 
 
       - name: Move cached zips to root (if restored)
@@ -113,7 +130,7 @@ jobs:
 
           
       - name: Delete previous cache
-        if: steps.zipcheck.outputs.found == 'true'
+        if: (steps.zipcheck.outputs.found == 'true') && (steps.cache-restore.outputs.cache-hit == 'true')
         run: |
           gh extension install actions/gh-actions-cache
           gh actions-cache delete "${{ env.CACHE_KEY }}" --confirm
@@ -123,6 +140,7 @@ jobs:
       - name: Update files in /tmp/zips-cache
         if: steps.zipcheck.outputs.found == 'true'
         run: |
+          mkdir -p /tmp/zips-cache
           cp -rv *.zip /tmp/zips-cache
 
       - name: Save new cache
