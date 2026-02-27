@@ -1,4 +1,4 @@
-name: Force update from template
+name: Update and rebuild
 
 on:
   workflow_dispatch:
